@@ -1,16 +1,17 @@
 (function () {
     // 必要な要素を取得
+    const title = document.querySelector('.p-novel__title')?.innerText;
     const body = document.querySelector('.p-novel__body')?.innerHTML;
     const nextLink = document.querySelector('.c-pager__item--next')?.getAttribute('href');
     const prevLink = document.querySelector('.c-pager__item--before')?.getAttribute('href');
     const indexLink = location.href.trim().replace(/\/\d+\/$/, '');
-    
+
     if (!body) return; // 本文がない場合は終了
-    
+
     // 既存のスタイルを削除
     const existingStyles = document.querySelectorAll('link[rel="stylesheet"], style');
     existingStyles.forEach(s => s.remove());
-    
+
     // viewportメタタグの設定
     let meta = document.querySelector('meta[name="viewport"]');
     if (!meta) {
@@ -19,12 +20,12 @@
         document.head.appendChild(meta);
     }
     meta.content = "width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=5.0";
-    
+
     // ローカルストレージから設定を読み込み
     const savedTheme = localStorage.getItem('reader-theme') || 'light';
     const savedFontSize = localStorage.getItem('reader-font-size') || '18';
     const currentUrl = location.href;
-    
+
     // DOM構造を作成
     document.body.innerHTML = `
         <div id="reader-container" data-theme="${savedTheme}">
@@ -73,6 +74,7 @@
             <!-- メインコンテンツ -->
             <main class="reader-main">
                 <article class="novel-content">
+                    <h1 class="novel-title">${title}</h1>
                     <div class="novel-body" style="font-size: ${savedFontSize}px">${body}</div>
                 </article>
             </main>
@@ -99,7 +101,7 @@
             </nav>
         </div>
     `;
-    
+
     // スタイルシートを追加
     const style = document.createElement('style');
     style.textContent = `
@@ -295,6 +297,13 @@
             padding-top: var(--header-height);
             padding-bottom: var(--bottom-nav-height);
         }
+
+        .novel-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            text-align: center;
+        }
         
         .reader-main {
             max-width: 800px;
@@ -408,11 +417,11 @@
             }
         }
     `;
-    
+
     document.head.appendChild(style);
-    
+
     // ===== JavaScript機能の実装 ===== //
-    
+
     // プログレスバーの更新
     const progressBar = document.getElementById('progress-bar');
     function updateProgress() {
@@ -422,7 +431,7 @@
         progressBar.style.width = scrolled + '%';
     }
     window.addEventListener('scroll', updateProgress, { passive: true });
-    
+
     // テーマ切り替え
     const themeToggle = document.getElementById('theme-toggle');
     themeToggle.addEventListener('click', () => {
@@ -432,16 +441,16 @@
         container.setAttribute('data-theme', newTheme);
         localStorage.setItem('reader-theme', newTheme);
     });
-    
+
     // フォントサイズ調整
     const fontSizeBtn = document.getElementById('font-size-btn');
     const fontPanel = document.getElementById('font-panel');
     const novelBody = document.querySelector('.novel-body');
-    
+
     fontSizeBtn.addEventListener('click', () => {
         fontPanel.classList.toggle('active');
     });
-    
+
     // フォントサイズ調整の実装（スライダー＆数値入力）
     const fontSizeSlider = document.getElementById('font-size-slider');
     const fontSizeNumber = document.getElementById('font-size-number');
@@ -462,24 +471,63 @@
         if (isNaN(val)) val = 18;
         updateFontSize(val);
     });
-    
+
     // パネル外クリックで閉じる
     document.addEventListener('click', (e) => {
         if (!fontPanel.contains(e.target) && !fontSizeBtn.contains(e.target)) {
             fontPanel.classList.remove('active');
         }
     });
-    
+
+    document.addEventListener('dblclick', () => {
+        const header = document.querySelector('.reader-header');
+        const nav = document.querySelector('.bottom-nav');
+        const fontPanel = document.getElementById('font-panel');
+        const isHidden = header.style.display === 'none';
+        header.style.display = isHidden ? 'block' : 'none';
+        nav.style.display = isHidden ? 'flex' : 'none';
+        fontPanel.style.display = isHidden ? 'block' : 'none';
+    });
+
+
+    // スワイプ操作の実装
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    document.addEventListener('touchstart', e => {
+        touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    document.addEventListener('touchend', e => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+    }, { passive: true });
+
+    function handleSwipe() {
+        const swipeThreshold = 100; // スワイプと判定する最低距離(px)
+        const diff = touchEndX - touchStartX;
+
+        if (Math.abs(diff) > swipeThreshold) {
+            if (diff < 0 && nextLink) {
+                // 右から左へスワイプ：次のページ
+                window.location.href = nextLink;
+            } else if (diff > 0 && prevLink) {
+                // 左から右へスワイプ：前のページ
+                window.location.href = prevLink;
+            }
+        }
+    }
+
     // 読書位置の保存と復元
     const positionKey = `reading-position-${currentUrl}`;
     const savedPosition = localStorage.getItem(positionKey);
-    
+
     if (savedPosition) {
         setTimeout(() => {
             window.scrollTo(0, parseInt(savedPosition));
         }, 100);
     }
-    
+
     // スクロール位置を定期的に保存
     let scrollTimer;
     window.addEventListener('scroll', () => {
@@ -488,5 +536,5 @@
             localStorage.setItem(positionKey, window.scrollY);
         }, 500);
     }, { passive: true });
-    
+
 })();
