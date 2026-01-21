@@ -1,0 +1,19 @@
+{
+  "manifest_version": 2,
+  "name": "Simple Novel Reader",
+  "version": "1.0",
+  "description": "小説ページの表示をシンプルに整形して読みやすくします。",
+  "content_scripts": [
+    {
+      "matches": ["https://ncode.syosetu.com/*/*/"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "my-simple-reader@example.com",
+      "strict_min_version": "109.0"
+    }
+  }
+}
